@@ -1,13 +1,6 @@
 import argparse
-import os
-import sys
 import traceback
 
-# Get the parent directory
-p = os.path.abspath(os.path.join(".", os.pardir))
-
-# Add it to the PYTHONPATH env variable
-sys.path.insert(1, p)
 
 # Local import
 import log
