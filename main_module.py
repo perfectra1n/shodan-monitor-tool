@@ -3,6 +3,7 @@ import traceback
 import questionary
 import shodan
 import json
+import time
 
 # Local import
 import log
@@ -31,12 +32,9 @@ def get_last_ip():
             return None
 
 def main():
-    shodan_api = shodan.Shodan(get_api_key())
-    last_ip = get_last_ip()
-    
-    
-    my_ip = shodan_api.tools.myip()
+      
     all_shodan_alerts = shodan_api.alerts() 
+    last_ip = get_last_ip()
     
     # See if our IP address is in any of the alerts.
     alert_exists = False
@@ -66,6 +64,17 @@ def main():
 
     return
 
+def scan_home_ip():
+    
+    scan_response = shodan_api.scan(ips=[my_ip])
+    while shodan_api.scan_status(scan_response["id"])["status"] != "DONE":
+        logger.info("Scan is running...")
+        logger.debug(shodan_api.scan_status(scan_response["id"]))
+        time.sleep(10)
+    logger.info(f"Here is the updated information for the IP {my_ip}")
+    logger.info(json.dumps(shodan_api.host(my_ip), indent=4))
+    return
+
 if __name__ == "__main__":
 
     try:
@@ -73,9 +82,14 @@ if __name__ == "__main__":
             description="This is the description for the main parser!"
         )
         parser.add_argument(
+            "--scan",
+            action="store_true",
+            help="Optional. Use this argument if you want to issue a scan against your IP instead.",
+        )
+        parser.add_argument(
             "--debug",
             action="store_true",
-            help="Optional. Use this argument if you are debugging any errors.",
+            help="Optional. Use this argument if you want to debug.",
         )
 
         args = parser.parse_args()
@@ -84,7 +98,16 @@ if __name__ == "__main__":
 
         logger.debug("This is the debug logger!")
 
-        main()
+
+        # Create what we're going to use later
+        shodan_api = shodan.Shodan(get_api_key())
+        my_ip = shodan_api.tools.myip()
+        
+
+        if args.scan:
+            scan_home_ip()
+        else:
+            main()
 
     except Exception:
         logger.error("Unhandled Exception!")
